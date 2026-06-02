@@ -17,7 +17,7 @@ export function registerWriteCommands(program: Command): void {
     .option('--input <file>', '从文件读取输入内容')
     .option('--input-type <type>', '输入类型: idea | fragment | outline | title', 'idea')
     .option('--length <length>', '文章长度: short | medium | long', 'medium')
-    .option('--output <file>', '输出 prompt 到文件')
+
     .action(async (cmdOpts) => {
       const opts = program.opts<GlobalOptions>();
 
@@ -48,10 +48,10 @@ export function registerWriteCommands(program: Command): void {
         length: cmdOpts.length as ArticleLength,
       });
 
-      if (cmdOpts.output) {
+      if (opts.output) {
         const { writeFileSync } = await import('node:fs');
-        writeFileSync(cmdOpts.output, result.prompt, 'utf-8');
-        output({ style: result.style, output: cmdOpts.output, metadata: result.metadata },
+        writeFileSync(opts.output, result.prompt, 'utf-8');
+        output({ style: result.style, output: opts.output, metadata: result.metadata },
           { format: opts.format, quiet: opts.quiet });
       } else {
         output(result, { format: opts.format, quiet: opts.quiet });

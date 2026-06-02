@@ -16,7 +16,7 @@ export function registerHumanizeCommands(program: Command): void {
     .option('--focus <categories>', '聚焦模式类别（逗号分隔）: content,language,style,filler,collaboration')
     .option('--preserve-style <style>', '保留写作风格（配合 writer 使用）')
     .option('--score', '在输出中包含 5 维质量评分要求', false)
-    .option('--output <file>', '输出 prompt 到文件')
+
     .action(async (cmdOpts) => {
       const opts = program.opts<GlobalOptions>();
 
@@ -37,10 +37,10 @@ export function registerHumanizeCommands(program: Command): void {
         includeScore: cmdOpts.score,
       });
 
-      if (cmdOpts.output) {
+      if (opts.output) {
         const { writeFileSync } = await import('node:fs');
-        writeFileSync(cmdOpts.output, result.prompt, 'utf-8');
-        output({ intensity: result.intensity, focus_patterns: result.focus_patterns, output: cmdOpts.output },
+        writeFileSync(opts.output, result.prompt, 'utf-8');
+        output({ intensity: result.intensity, focus_patterns: result.focus_patterns, output: opts.output },
           { format: opts.format, quiet: opts.quiet });
       } else {
         output(result, { format: opts.format, quiet: opts.quiet });

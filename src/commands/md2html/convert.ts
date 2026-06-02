@@ -14,7 +14,7 @@ export function registerMd2htmlCommands(program: Command): void {
 
   md2html
     .option('--input <file>', 'Markdown 文件路径（不指定则从 stdin 读取）')
-    .option('--output <file>', '输出 HTML 文件路径（不指定则输出到 stdout）')
+
     .option('--theme <id>', '主题 ID（默认 wechat）', 'wechat')
     .option('--list-themes', '列出所有可用主题')
     .option('--draft', '转换后直接创建草稿')
@@ -86,10 +86,10 @@ export function registerMd2htmlCommands(program: Command): void {
       }
 
       // Output HTML
-      if (cmdOpts.output) {
+      if (opts.output) {
         const { writeFileSync } = await import('node:fs');
-        writeFileSync(cmdOpts.output, html, 'utf-8');
-        success(`已输出到 ${cmdOpts.output}`, opts.quiet);
+        writeFileSync(opts.output, html, 'utf-8');
+        success(`已输出到 ${opts.output}`, opts.quiet);
       } else {
         process.stdout.write(html);
         if (!opts.quiet) {
