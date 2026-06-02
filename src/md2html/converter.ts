@@ -14,7 +14,9 @@ export function convertMarkdown(markdown: string, options: ConvertOptions = {}):
   const styles = theme.styles;
   const shouldHighlight = options.highlight !== false;
 
-  const marked = new Marked();
+  const marked = new Marked({
+    breaks: true, // 单个换行符转 <br>（软换行），空行仍为分段
+  });
   let trIndex = 0;
 
   marked.use({

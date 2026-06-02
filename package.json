@@ -8,6 +8,7 @@
   },
   "scripts": {
     "build": "tsc",
+    "postbuild": "chmod +x dist/bin/wechat-cli.js",
     "dev": "tsx bin/wechat-cli.ts",
     "start": "node dist/bin/wechat-cli.js",
     "test": "vitest run",
