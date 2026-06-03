@@ -211,3 +211,4 @@ wechat-cli draft publish <草稿media_id> --format json --quiet
 - `--thumb-media-id` 仅图文消息需要，图片消息的封面图为 `--images` 的首张图片
 - 发布是异步操作，需通过 `publish-status` 查询结果
 - 标题不超过 32 字，作者不超过 16 字，摘要不超过 128 字
+- 多公众号场景使用 `--profile <name>` 指定目标公众号，JSON 输出会包含 `"profile"` 字段

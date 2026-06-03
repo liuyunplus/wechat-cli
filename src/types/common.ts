@@ -6,4 +6,5 @@ export interface GlobalOptions {
   quiet: boolean;
   verbose: boolean;
   config?: string;
+  profile?: string;
 }

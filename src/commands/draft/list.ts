@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import { readFileSync } from 'node:fs';
 import { apiPost } from '../../core/http.js';
+import { resolveProfile } from '../../core/config.js';
 import { output, success, info } from '../../core/output.js';
 import type { GlobalOptions } from '../../types/common.js';
 import type {
@@ -23,7 +24,8 @@ export function registerDraftCommands(program: Command): void {
     .option('--count <n>', '获取数量 (最大20)', '20')
     .option('--no-content', '不返回文章内容')
     .action(async (cmdOpts) => {
-      const opts = program.opts<GlobalOptions>();
+      const opts = program.opts<GlobalOptions & { profile?: string; config?: string }>();
+      const profileName = resolveProfile({ profile: opts.profile, config: opts.config });
       const resp = await apiPost<DraftListResponse>(
         '/cgi-bin/draft/batchget',
         {
@@ -32,7 +34,7 @@ export function registerDraftCommands(program: Command): void {
           no_content: cmdOpts.content === false ? 1 : 0,
         },
         undefined,
-        opts.config,
+        profileName,
       );
 
       output({
@@ -56,12 +58,13 @@ export function registerDraftCommands(program: Command): void {
     .description('获取草稿详情')
     .argument('<media_id>', '草稿 media_id')
     .action(async (mediaId: string) => {
-      const opts = program.opts<GlobalOptions>();
+      const opts = program.opts<GlobalOptions & { profile?: string; config?: string }>();
+      const profileName = resolveProfile({ profile: opts.profile, config: opts.config });
       const resp = await apiPost<DraftListResponse>(
         '/cgi-bin/draft/get',
         { media_id: mediaId },
         undefined,
-        opts.config,
+        profileName,
       );
 
       output(resp, { format: opts.format, outputFile: opts.output, quiet: opts.quiet });
@@ -83,7 +86,8 @@ export function registerDraftCommands(program: Command): void {
     .option('--pic-crop-235-1 <coords>', '封面裁剪 2.35:1 坐标 (X1_Y1_X2_Y2)')
     .option('--pic-crop-1-1 <coords>', '封面裁剪 1:1 坐标 (X1_Y1_X2_Y2)')
     .action(async (cmdOpts) => {
-      const opts = program.opts<GlobalOptions>();
+      const opts = program.opts<GlobalOptions & { profile?: string; config?: string }>();
+      const profileName = resolveProfile({ profile: opts.profile, config: opts.config });
 
       let content = cmdOpts.content || '';
       if (cmdOpts.contentFile) {
@@ -112,7 +116,7 @@ export function registerDraftCommands(program: Command): void {
         '/cgi-bin/draft/add',
         { articles: [article] },
         undefined,
-        opts.config,
+        profileName,
       );
 
       output({ media_id: resp.media_id }, { format: opts.format, outputFile: opts.output, quiet: opts.quiet });
@@ -131,7 +135,8 @@ export function registerDraftCommands(program: Command): void {
     .option('--fans-comment-only', '仅粉丝可评论', false)
     .option('--cover-crop <ratio:x1:y1:x2:y2>', '封面裁剪信息 (如 1_1:0.166:0:0.833:1)')
     .action(async (cmdOpts) => {
-      const opts = program.opts<GlobalOptions>();
+      const opts = program.opts<GlobalOptions & { profile?: string; config?: string }>();
+      const profileName = resolveProfile({ profile: opts.profile, config: opts.config });
 
       let content = cmdOpts.content || '';
       if (cmdOpts.contentFile) {
@@ -171,7 +176,7 @@ export function registerDraftCommands(program: Command): void {
         '/cgi-bin/draft/add',
         { articles: [article] },
         undefined,
-        opts.config,
+        profileName,
       );
 
       output({ media_id: resp.media_id }, { format: opts.format, outputFile: opts.output, quiet: opts.quiet });
@@ -190,7 +195,8 @@ export function registerDraftCommands(program: Command): void {
     .option('--author <author>', '作者')
     .option('--digest <digest>', '摘要')
     .action(async (mediaId: string, cmdOpts) => {
-      const opts = program.opts<GlobalOptions>();
+      const opts = program.opts<GlobalOptions & { profile?: string; config?: string }>();
+      const profileName = resolveProfile({ profile: opts.profile, config: opts.config });
 
       const article: Record<string, unknown> = {};
       if (cmdOpts.title) article.title = cmdOpts.title;
@@ -211,7 +217,7 @@ export function registerDraftCommands(program: Command): void {
           articles: article,
         },
         undefined,
-        opts.config,
+        profileName,
       );
 
       success(`草稿 ${mediaId} 更新成功`, opts.quiet);
@@ -222,13 +228,14 @@ export function registerDraftCommands(program: Command): void {
     .description('删除草稿')
     .argument('<media_id>', '草稿 media_id')
     .action(async (mediaId: string) => {
-      const opts = program.opts<GlobalOptions>();
+      const opts = program.opts<GlobalOptions & { profile?: string; config?: string }>();
+      const profileName = resolveProfile({ profile: opts.profile, config: opts.config });
 
       await apiPost<WechatApiResponse>(
         '/cgi-bin/draft/delete',
         { media_id: mediaId },
         undefined,
-        opts.config,
+        profileName,
       );
 
       success(`草稿 ${mediaId} 已删除`, opts.quiet);
@@ -239,13 +246,14 @@ export function registerDraftCommands(program: Command): void {
     .description('发布草稿')
     .argument('<media_id>', '草稿 media_id')
     .action(async (mediaId: string) => {
-      const opts = program.opts<GlobalOptions>();
+      const opts = program.opts<GlobalOptions & { profile?: string; config?: string }>();
+      const profileName = resolveProfile({ profile: opts.profile, config: opts.config });
 
       const resp = await apiPost<PublishResponse>(
         '/cgi-bin/freepublish/submit',
         { media_id: mediaId },
         undefined,
-        opts.config,
+        profileName,
       );
 
       output({ publish_id: resp.publish_id }, { format: opts.format, outputFile: opts.output, quiet: opts.quiet });
@@ -258,13 +266,14 @@ export function registerDraftCommands(program: Command): void {
     .description('查询发布状态')
     .argument('<publish_id>', '发布任务 ID')
     .action(async (publishId: string) => {
-      const opts = program.opts<GlobalOptions>();
+      const opts = program.opts<GlobalOptions & { profile?: string; config?: string }>();
+      const profileName = resolveProfile({ profile: opts.profile, config: opts.config });
 
       const resp = await apiPost<PublishStatusResponse>(
         '/cgi-bin/freepublish/get',
         { publish_id: publishId },
         undefined,
-        opts.config,
+        profileName,
       );
 
       const statusMap: Record<number, string> = {

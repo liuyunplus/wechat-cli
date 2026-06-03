@@ -2,15 +2,18 @@ import chalk from 'chalk';
 import Table from 'cli-table3';
 import { writeFileSync } from 'node:fs';
 import type { OutputFormat } from '../types/common.js';
+import { getCurrentProfileName } from './config.js';
 
 export interface OutputOptions {
   format: OutputFormat;
   outputFile?: string;
   quiet?: boolean;
+  profileName?: string;
 }
 
 export function output(data: unknown, options: OutputOptions): void {
-  const text = formatData(data, options.format);
+  const enriched = enrichWithProfile(data, options);
+  const text = formatData(enriched, options.format);
 
   if (options.outputFile) {
     writeFileSync(options.outputFile, text, 'utf-8');
@@ -20,6 +23,20 @@ export function output(data: unknown, options: OutputOptions): void {
   } else {
     process.stdout.write(text + '\n');
   }
+}
+
+function enrichWithProfile(data: unknown, options: OutputOptions): unknown {
+  const profileName = options.profileName || getCurrentProfileName();
+
+  if (options.format !== 'json' || !profileName || profileName === '__custom__') {
+    return data;
+  }
+
+  if (data && typeof data === 'object' && !Array.isArray(data)) {
+    return { profile: profileName, ...(data as Record<string, unknown>) };
+  }
+
+  return { profile: profileName, data };
 }
 
 function formatData(data: unknown, format: OutputFormat): string {

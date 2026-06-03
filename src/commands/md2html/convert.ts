@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { convertMarkdown } from '../../md2html/converter.js';
 import { getBuiltinThemes } from '../../md2html/themes/index.js';
 import { apiPost } from '../../core/http.js';
+import { resolveProfile } from '../../core/config.js';
 import { output, success } from '../../core/output.js';
 import type { GlobalOptions } from '../../types/common.js';
 import type { DraftCreateResponse } from '../../types/wechat-api.js';
@@ -21,7 +22,7 @@ export function registerMd2htmlCommands(program: Command): void {
     .option('--title <title>', '草稿标题（配合 --draft 使用）')
     .option('--thumb-media-id <id>', '封面图 media_id（配合 --draft 使用）')
     .action(async (cmdOpts) => {
-      const opts = program.opts<GlobalOptions>();
+      const opts = program.opts<GlobalOptions & { profile?: string; config?: string }>();
 
       // List themes
       if (cmdOpts.listThemes) {
@@ -63,6 +64,8 @@ export function registerMd2htmlCommands(program: Command): void {
           throw new Error('创建草稿需要 --title 参数');
         }
 
+        const profileName = resolveProfile({ profile: opts.profile, config: opts.config });
+
         const article: Record<string, unknown> = {
           article_type: 'news',
           title,
@@ -74,7 +77,7 @@ export function registerMd2htmlCommands(program: Command): void {
           '/cgi-bin/draft/add',
           { articles: [article] },
           undefined,
-          opts.config,
+          profileName,
         );
 
         output({

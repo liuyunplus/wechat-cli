@@ -1,4 +1,6 @@
 import { Command } from 'commander';
+import { resolveProfile, migrateLegacyConfig } from './core/config.js';
+import { warn } from './core/output.js';
 import { registerConfigCommands } from './commands/config/init.js';
 import { registerAuthCommands } from './commands/auth/login.js';
 import { registerDraftCommands } from './commands/draft/list.js';
@@ -20,7 +22,18 @@ export function createCli(): Command {
     .option('-o, --output <file>', '输出到文件')
     .option('-q, --quiet', '静默模式', false)
     .option('--verbose', '详细模式', false)
-    .option('--config <path>', '指定配置文件路径');
+    .option('--config <path>', '指定配置文件路径')
+    .option('-p, --profile <name>', '指定要使用的 profile');
+
+  program.hook('preAction', () => {
+    const migrated = migrateLegacyConfig();
+    if (migrated) {
+      warn('旧版配置文件已自动迁移到 profiles/default.json');
+    }
+
+    const opts = program.opts<{ profile?: string; config?: string }>();
+    resolveProfile({ profile: opts.profile, config: opts.config });
+  });
 
   registerConfigCommands(program);
   registerAuthCommands(program);

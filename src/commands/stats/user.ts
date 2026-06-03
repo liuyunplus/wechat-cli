@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 import { apiPost } from '../../core/http.js';
+import { resolveProfile } from '../../core/config.js';
 import { output } from '../../core/output.js';
 import type { GlobalOptions } from '../../types/common.js';
 import type { StatsResponse } from '../../types/wechat-api.js';
@@ -22,7 +23,8 @@ export function registerStatsCommands(program: Command): void {
     .requiredOption('--end-date <date>', '结束日期 (YYYY-MM-DD)')
     .option('--type <type>', '统计类型: summary | cumulate', 'summary')
     .action(async (cmdOpts) => {
-      const opts = program.opts<GlobalOptions>();
+      const opts = program.opts<GlobalOptions & { profile?: string; config?: string }>();
+      const profileName = resolveProfile({ profile: opts.profile, config: opts.config });
 
       const pathMap: Record<string, string> = {
         summary: '/datacube/getusersummary',
@@ -37,7 +39,7 @@ export function registerStatsCommands(program: Command): void {
           end_date: formatDateParam(cmdOpts.endDate),
         },
         undefined,
-        opts.config,
+        profileName,
       );
 
       output(resp.list, { format: opts.format, outputFile: opts.output, quiet: opts.quiet });
@@ -51,7 +53,8 @@ export function registerStatsCommands(program: Command): void {
     .requiredOption('--end-date <date>', '结束日期 (YYYY-MM-DD)')
     .option('--type <type>', '统计类型: summary | total | read | share', 'summary')
     .action(async (cmdOpts) => {
-      const opts = program.opts<GlobalOptions>();
+      const opts = program.opts<GlobalOptions & { profile?: string; config?: string }>();
+      const profileName = resolveProfile({ profile: opts.profile, config: opts.config });
 
       const pathMap: Record<string, string> = {
         summary: '/datacube/getarticlesummary',
@@ -68,7 +71,7 @@ export function registerStatsCommands(program: Command): void {
           end_date: formatDateParam(cmdOpts.endDate),
         },
         undefined,
-        opts.config,
+        profileName,
       );
 
       output(resp.list, { format: opts.format, outputFile: opts.output, quiet: opts.quiet });
@@ -82,7 +85,8 @@ export function registerStatsCommands(program: Command): void {
     .requiredOption('--end-date <date>', '结束日期 (YYYY-MM-DD)')
     .option('--type <type>', '统计类型: summary | hour | week | month | dist', 'summary')
     .action(async (cmdOpts) => {
-      const opts = program.opts<GlobalOptions>();
+      const opts = program.opts<GlobalOptions & { profile?: string; config?: string }>();
+      const profileName = resolveProfile({ profile: opts.profile, config: opts.config });
 
       const pathMap: Record<string, string> = {
         summary: '/datacube/getupstreammsg',
@@ -100,7 +104,7 @@ export function registerStatsCommands(program: Command): void {
           end_date: formatDateParam(cmdOpts.endDate),
         },
         undefined,
-        opts.config,
+        profileName,
       );
 
       output(resp.list, { format: opts.format, outputFile: opts.output, quiet: opts.quiet });

@@ -9,7 +9,7 @@ export interface RequestOptions {
   path: string;
   params?: Record<string, unknown>;
   data?: unknown;
-  configPath?: string;
+  profileName?: string;
   /** Skip token injection (e.g. for token fetch itself) */
   skipToken?: boolean;
   /** For file upload with form-data */
@@ -20,10 +20,10 @@ export interface RequestOptions {
 export async function request<T extends WechatApiResponse>(
   options: RequestOptions,
 ): Promise<T> {
-  const { method, path, params = {}, data, configPath, skipToken, headers, responseType } = options;
+  const { method, path, params = {}, data, profileName, skipToken, headers, responseType } = options;
 
   if (!skipToken) {
-    const token = await getAccessToken(configPath);
+    const token = await getAccessToken(profileName);
     params['access_token'] = token;
   }
 
@@ -64,16 +64,16 @@ export async function request<T extends WechatApiResponse>(
 export async function apiGet<T extends WechatApiResponse>(
   path: string,
   params?: Record<string, unknown>,
-  configPath?: string,
+  profileName?: string,
 ): Promise<T> {
-  return request<T>({ method: 'GET', path, params, configPath });
+  return request<T>({ method: 'GET', path, params, profileName });
 }
 
 export async function apiPost<T extends WechatApiResponse>(
   path: string,
   data?: unknown,
   params?: Record<string, unknown>,
-  configPath?: string,
+  profileName?: string,
 ): Promise<T> {
-  return request<T>({ method: 'POST', path, params, data, configPath });
+  return request<T>({ method: 'POST', path, params, data, profileName });
 }

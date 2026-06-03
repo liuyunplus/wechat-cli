@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import { readFileSync } from 'node:fs';
 import { request } from '../../core/http.js';
+import { resolveProfile } from '../../core/config.js';
 import { output } from '../../core/output.js';
 import type { GlobalOptions } from '../../types/common.js';
 import type { WechatApiResponse } from '../../types/wechat-api.js';
@@ -16,14 +17,15 @@ export function registerApiCommands(program: Command): void {
     .argument('<path>', 'API 路径，如 /cgi-bin/user/info')
     .option('--query <pairs...>', '查询参数 (key=value 格式)')
     .action(async (path: string, cmdOpts) => {
-      const opts = program.opts<GlobalOptions>();
+      const opts = program.opts<GlobalOptions & { profile?: string; config?: string }>();
+      const profileName = resolveProfile({ profile: opts.profile, config: opts.config });
       const params = parseQueryPairs(cmdOpts.query);
 
       const resp = await request<WechatApiResponse & Record<string, unknown>>({
         method: 'GET',
         path,
         params,
-        configPath: opts.config,
+        profileName,
       });
 
       output(resp, { format: opts.format, outputFile: opts.output, quiet: opts.quiet });
@@ -37,7 +39,8 @@ export function registerApiCommands(program: Command): void {
     .option('--body-file <path>', '从文件读取请求体')
     .option('--query <pairs...>', '查询参数 (key=value 格式)')
     .action(async (path: string, cmdOpts) => {
-      const opts = program.opts<GlobalOptions>();
+      const opts = program.opts<GlobalOptions & { profile?: string; config?: string }>();
+      const profileName = resolveProfile({ profile: opts.profile, config: opts.config });
       const params = parseQueryPairs(cmdOpts.query);
 
       let data: unknown;
@@ -53,7 +56,7 @@ export function registerApiCommands(program: Command): void {
         path,
         params,
         data,
-        configPath: opts.config,
+        profileName,
       });
 
       output(resp, { format: opts.format, outputFile: opts.output, quiet: opts.quiet });

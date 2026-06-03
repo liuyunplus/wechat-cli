@@ -22,11 +22,35 @@
 2. 初始化配置: `wechat-cli config init`
 3. 获取 Token: `wechat-cli auth login`
 
+## 多公众号管理（Profiles）
+
+wechat-cli 支持通过命名 profile 管理多个微信公众号。每个 profile 拥有独立的配置和 Token 缓存。
+
+```bash
+# 创建命名 profile
+wechat-cli config init --profile tech-blog
+wechat-cli config init --profile news
+
+# 切换默认 profile
+wechat-cli config use tech-blog
+
+# 列出所有 profile
+wechat-cli config list
+
+# 单次命令覆盖 profile（不改变默认值）
+wechat-cli draft list --profile news
+wechat-cli auth status --profile tech-blog --format json --quiet
+```
+
+首次升级时，旧版 `config.json` 会自动迁移为 `default` profile。
+
 ## 全局选项
 
 所有命令支持以下全局选项：
 
-- `--format json` — 输出 JSON（推荐 Agent 使用）
+- `--format json` — 输出 JSON（推荐 Agent 使用），JSON 输出会自动注入 `"profile"` 字段
 - `--quiet` — 静默模式，仅输出数据
 - `--output <file>` — 输出到文件
 - `--verbose` — 调试模式
+- `--profile <name>` — 指定要使用的 profile
+- `--config <path>` — 指定配置文件路径（高级用法）

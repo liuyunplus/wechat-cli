@@ -3,6 +3,7 @@ import { createReadStream } from 'node:fs';
 import { basename } from 'node:path';
 import FormData from 'form-data';
 import { request, apiPost, apiGet } from '../../core/http.js';
+import { resolveProfile } from '../../core/config.js';
 import { output, success } from '../../core/output.js';
 import type { GlobalOptions } from '../../types/common.js';
 import type {
@@ -25,7 +26,8 @@ export function registerMediaCommands(program: Command): void {
     .requiredOption('--type <type>', '素材类型: image | voice | video | thumb')
     .requiredOption('--file <path>', '文件路径')
     .action(async (cmdOpts) => {
-      const opts = program.opts<GlobalOptions>();
+      const opts = program.opts<GlobalOptions & { profile?: string; config?: string }>();
+      const profileName = resolveProfile({ profile: opts.profile, config: opts.config });
 
       const form = new FormData();
       form.append('media', createReadStream(cmdOpts.file), basename(cmdOpts.file));
@@ -36,7 +38,7 @@ export function registerMediaCommands(program: Command): void {
         params: { type: cmdOpts.type },
         data: form,
         headers: form.getHeaders(),
-        configPath: opts.config,
+        profileName,
       });
 
       output({
@@ -55,7 +57,8 @@ export function registerMediaCommands(program: Command): void {
     .option('--title <title>', '视频素材标题（仅 video 类型需要）')
     .option('--description <desc>', '视频素材描述（仅 video 类型需要）')
     .action(async (cmdOpts) => {
-      const opts = program.opts<GlobalOptions>();
+      const opts = program.opts<GlobalOptions & { profile?: string; config?: string }>();
+      const profileName = resolveProfile({ profile: opts.profile, config: opts.config });
 
       const form = new FormData();
       form.append('media', createReadStream(cmdOpts.file), basename(cmdOpts.file));
@@ -73,7 +76,7 @@ export function registerMediaCommands(program: Command): void {
         params: { type: cmdOpts.type },
         data: form,
         headers: form.getHeaders(),
-        configPath: opts.config,
+        profileName,
       });
 
       output({
@@ -88,7 +91,8 @@ export function registerMediaCommands(program: Command): void {
     .description('上传图文消息内的图片（返回 URL）')
     .requiredOption('--file <path>', '图片文件路径')
     .action(async (cmdOpts) => {
-      const opts = program.opts<GlobalOptions>();
+      const opts = program.opts<GlobalOptions & { profile?: string; config?: string }>();
+      const profileName = resolveProfile({ profile: opts.profile, config: opts.config });
 
       const form = new FormData();
       form.append('media', createReadStream(cmdOpts.file), basename(cmdOpts.file));
@@ -98,7 +102,7 @@ export function registerMediaCommands(program: Command): void {
         path: '/cgi-bin/media/uploadimg',
         data: form,
         headers: form.getHeaders(),
-        configPath: opts.config,
+        profileName,
       });
 
       output({ url: resp.url }, { format: opts.format, outputFile: opts.output, quiet: opts.quiet });
@@ -112,7 +116,8 @@ export function registerMediaCommands(program: Command): void {
     .option('--offset <n>', '起始位置', '0')
     .option('--count <n>', '获取数量 (最大20)', '20')
     .action(async (cmdOpts) => {
-      const opts = program.opts<GlobalOptions>();
+      const opts = program.opts<GlobalOptions & { profile?: string; config?: string }>();
+      const profileName = resolveProfile({ profile: opts.profile, config: opts.config });
 
       const resp = await apiPost<MediaListResponse>(
         '/cgi-bin/material/batchget_material',
@@ -122,7 +127,7 @@ export function registerMediaCommands(program: Command): void {
           count: parseInt(cmdOpts.count),
         },
         undefined,
-        opts.config,
+        profileName,
       );
 
       output({
@@ -142,13 +147,14 @@ export function registerMediaCommands(program: Command): void {
     .description('获取素材详情')
     .argument('<media_id>', '素材 media_id')
     .action(async (mediaId: string) => {
-      const opts = program.opts<GlobalOptions>();
+      const opts = program.opts<GlobalOptions & { profile?: string; config?: string }>();
+      const profileName = resolveProfile({ profile: opts.profile, config: opts.config });
 
       const resp = await apiPost<WechatApiResponse & Record<string, unknown>>(
         '/cgi-bin/material/get_material',
         { media_id: mediaId },
         undefined,
-        opts.config,
+        profileName,
       );
 
       output(resp, { format: opts.format, outputFile: opts.output, quiet: opts.quiet });
@@ -159,13 +165,14 @@ export function registerMediaCommands(program: Command): void {
     .description('删除永久素材')
     .argument('<media_id>', '素材 media_id')
     .action(async (mediaId: string) => {
-      const opts = program.opts<GlobalOptions>();
+      const opts = program.opts<GlobalOptions & { profile?: string; config?: string }>();
+      const profileName = resolveProfile({ profile: opts.profile, config: opts.config });
 
       await apiPost<WechatApiResponse>(
         '/cgi-bin/material/del_material',
         { media_id: mediaId },
         undefined,
-        opts.config,
+        profileName,
       );
 
       success(`素材 ${mediaId} 已删除`, opts.quiet);
@@ -175,12 +182,13 @@ export function registerMediaCommands(program: Command): void {
     .command('count')
     .description('获取素材总量统计')
     .action(async () => {
-      const opts = program.opts<GlobalOptions>();
+      const opts = program.opts<GlobalOptions & { profile?: string; config?: string }>();
+      const profileName = resolveProfile({ profile: opts.profile, config: opts.config });
 
       const resp = await apiGet<MediaCountResponse>(
         '/cgi-bin/material/get_materialcount',
         undefined,
-        opts.config,
+        profileName,
       );
 
       output({
