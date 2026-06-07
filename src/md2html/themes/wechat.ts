@@ -6,7 +6,7 @@ export const wechatTheme: Theme = {
   description: '原汁原味的官方绿底纹，满足传统阅读习惯的稳妥之选',
   codeTheme: 'github',
   styles: {
-    container: 'max-width: 100%; margin: 0 auto; padding: 24px 20px 48px 20px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 16px; line-height: 1.7; color: #333333; background-color: #ffffff; word-wrap: break-word;',
+    container: 'max-width: 100%; margin: 0 auto; padding: 8px 10px 24px 10px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 16px; line-height: 1.7; color: #333333; background-color: #ffffff; word-wrap: break-word;',
     h1: 'font-size: 32px; font-weight: 700; color: #111; line-height: 1.3; margin: 38px 0 16px; letter-spacing: -0.015em;',
     h2: 'font-size: 26px; font-weight: 600; color: #111; line-height: 1.35; margin: 32px 0 16px;',
     h3: 'font-size: 21px; font-weight: 600; color: #333333; line-height: 1.4; margin: 28px 0 14px;',
