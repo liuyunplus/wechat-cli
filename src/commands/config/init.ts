@@ -13,7 +13,11 @@ import {
 } from '../../core/config.js';
 import { output, success, info, warn } from '../../core/output.js';
 import type { AppConfig, AccountType } from '../../types/config.js';
-import { DEFAULT_CONFIG, PROFILE_NAME_REGEX } from '../../types/config.js';
+import {
+  DEFAULT_CONFIG,
+  normalizeProfileName,
+  validateProfileName,
+} from '../../types/config.js';
 import type { GlobalOptions } from '../../types/common.js';
 
 export function registerConfigCommands(program: Command): void {
@@ -39,14 +43,21 @@ export function registerConfigCommands(program: Command): void {
     .action((profile: string) => {
       const opts = program.opts<GlobalOptions>();
 
-      const configPath = getProfileConfigPath(profile);
+      const validation = validateProfileName(profile);
+      if (!validation.valid) {
+        warn(validation.reason || 'Profile 名称不合法', opts.quiet);
+        process.exit(1);
+      }
+      const normalized = normalizeProfileName(profile);
+
+      const configPath = getProfileConfigPath(normalized);
       if (!existsSync(configPath)) {
-        warn(`Profile '${profile}' 不存在，请先运行 wechat-cli config init --profile ${profile}`, opts.quiet);
+        warn(`Profile '${normalized}' 不存在，请先运行 wechat-cli config init --profile ${normalized}`, opts.quiet);
         process.exit(1);
       }
 
-      saveActiveProfile(profile);
-      success(`已切换到 profile '${profile}'`, opts.quiet);
+      saveActiveProfile(normalized);
+      success(`已切换到 profile '${normalized}'`, opts.quiet);
     });
 
   config
@@ -79,17 +90,25 @@ export function registerConfigCommands(program: Command): void {
     .argument('<profile>', 'Profile 名称')
     .action((profile: string) => {
       const opts = program.opts<GlobalOptions>();
-      if (!existsSync(getProfileConfigPath(profile))) {
-        warn(`Profile '${profile}' 不存在`, opts.quiet);
+
+      const validation = validateProfileName(profile);
+      if (!validation.valid) {
+        warn(validation.reason || 'Profile 名称不合法', opts.quiet);
+        process.exit(1);
+      }
+      const normalized = normalizeProfileName(profile);
+
+      if (!existsSync(getProfileConfigPath(normalized))) {
+        warn(`Profile '${normalized}' 不存在`, opts.quiet);
         process.exit(1);
       }
 
-      deleteProfile(profile);
+      deleteProfile(normalized);
 
       const active = loadActiveProfile();
       const msg = active
-        ? `Profile '${profile}' 已删除，当前 active: '${active}'`
-        : `Profile '${profile}' 已删除（该 profile 曾是默认激活项，请使用 config use 切换）`;
+        ? `Profile '${normalized}' 已删除，当前 active: '${active}'`
+        : `Profile '${normalized}' 已删除（该 profile 曾是默认激活项，请使用 config use 切换）`;
 
       success(msg, opts.quiet);
     });
@@ -143,11 +162,16 @@ async function initConfig(
   profileName: string | undefined,
   opts: GlobalOptions,
 ): Promise<void> {
-  const resolvedName = profileName || resolveProfile({ profile: opts.profile, config: opts.config });
+  const resolvedName = profileName
+    ? normalizeProfileName(profileName)
+    : resolveProfile({ profile: opts.profile, config: opts.config });
 
-  if (profileName && !PROFILE_NAME_REGEX.test(profileName)) {
-    warn(`Profile 名称不合法: "${profileName}"。仅支持小写字母、数字和连字符（例如 tech-blog）`, opts.quiet);
-    process.exit(1);
+  if (profileName) {
+    const validation = validateProfileName(resolvedName);
+    if (!validation.valid) {
+      warn(validation.reason || `Profile 名称不合法: "${profileName}"`, opts.quiet);
+      process.exit(1);
+    }
   }
 
   let existing: Partial<AppConfig> = {};

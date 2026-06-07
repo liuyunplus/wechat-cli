@@ -5,13 +5,14 @@ import {
   TokenCache,
   DEFAULT_CONFIG,
   DEFAULT_PROFILE_NAME,
-  PROFILE_NAME_REGEX,
   CONFIG_DIR,
   PROFILES_DIR,
   TOKENS_DIR,
   ACTIVE_FILE,
   LEGACY_CONFIG_FILE,
   LEGACY_TOKEN_FILE,
+  normalizeProfileName,
+  validateProfileName,
 } from '../types/config.js';
 import type { ProfileMeta } from '../types/profile.js';
 import { ConfigError } from './error.js';
@@ -64,6 +65,13 @@ function isCustomPath(path: string): boolean {
   return path.includes('/') || path.includes('.json') || path.includes('\\');
 }
 
+function assertValidProfileName(name: string): void {
+  const result = validateProfileName(name);
+  if (!result.valid) {
+    throw new ConfigError(result.reason || 'Profile 名称不合法');
+  }
+}
+
 export function resolveProfile(opts?: { profile?: string; config?: string }): string {
   if (opts?.config && isCustomPath(opts.config)) {
     setCurrentProfileName('__custom__');
@@ -71,23 +79,15 @@ export function resolveProfile(opts?: { profile?: string; config?: string }): st
   }
 
   if (opts?.profile) {
-    const name = opts.profile.trim();
-    if (!PROFILE_NAME_REGEX.test(name)) {
-      throw new ConfigError(
-        `Profile 名称不合法: "${name}"。仅支持小写字母、数字和连字符（例如 tech-blog）`,
-      );
-    }
+    const name = normalizeProfileName(opts.profile);
+    assertValidProfileName(name);
     setCurrentProfileName(name);
     return name;
   }
 
   if (opts?.config) {
-    const name = opts.config.trim();
-    if (!PROFILE_NAME_REGEX.test(name)) {
-      throw new ConfigError(
-        `Profile 名称不合法: "${name}"。仅支持小写字母、数字和连字符（例如 tech-blog）`,
-      );
-    }
+    const name = normalizeProfileName(opts.config);
+    assertValidProfileName(name);
     setCurrentProfileName(name);
     return name;
   }
@@ -107,8 +107,12 @@ export function loadActiveProfile(): string {
     if (!raw) return DEFAULT_PROFILE_NAME;
 
     const data = JSON.parse(raw);
-    const name = typeof data === 'string' ? data : (data as { active?: string }).active;
-    if (!name || !PROFILE_NAME_REGEX.test(name)) {
+    const rawName = typeof data === 'string' ? data : (data as { active?: string }).active;
+    if (!rawName) return DEFAULT_PROFILE_NAME;
+
+    const name = normalizeProfileName(rawName);
+
+    if (!validateProfileName(name).valid) {
       return DEFAULT_PROFILE_NAME;
     }
 
@@ -123,8 +127,10 @@ export function loadActiveProfile(): string {
 }
 
 export function saveActiveProfile(name: string): void {
+  const normalized = normalizeProfileName(name);
+  assertValidProfileName(normalized);
   ensureDir(CONFIG_DIR);
-  writeFileSync(ACTIVE_FILE, JSON.stringify(name, null, 2) + '\n', 'utf-8');
+  writeFileSync(ACTIVE_FILE, JSON.stringify(normalized, null, 2) + '\n', 'utf-8');
 }
 
 export function clearActiveProfile(): void {
@@ -144,7 +150,7 @@ export function listProfiles(): ProfileMeta[] {
   const files = readdirSync(PROFILES_DIR).filter(f => f.endsWith('.json'));
 
   return files.map(file => {
-    const name = file.replace(/\.json$/, '');
+    const name = normalizeProfileName(file.replace(/\.json$/, ''));
     return {
       name,
       configPath: getProfileConfigPath(name),
@@ -155,11 +161,14 @@ export function listProfiles(): ProfileMeta[] {
 }
 
 export function deleteProfile(name: string): void {
-  const configPath = getProfileConfigPath(name);
-  const tokenPath = getProfileTokenPath(name);
+  const normalized = normalizeProfileName(name);
+  assertValidProfileName(normalized);
+
+  const configPath = getProfileConfigPath(normalized);
+  const tokenPath = getProfileTokenPath(normalized);
 
   if (!existsSync(configPath)) {
-    throw new ConfigError(`Profile '${name}' 不存在`);
+    throw new ConfigError(`Profile '${normalized}' 不存在`);
   }
 
   unlinkSync(configPath);
@@ -169,7 +178,7 @@ export function deleteProfile(name: string): void {
   }
 
   const active = loadActiveProfile();
-  if (active === name) {
+  if (active === normalized) {
     clearActiveProfile();
   }
 }
@@ -257,8 +266,10 @@ export function saveConfig(config: AppConfig, profileName?: string): void {
   if (isCustomPath(name)) {
     writeFileSync(name, JSON.stringify(config, null, 2), 'utf-8');
   } else {
+    const normalized = normalizeProfileName(name);
+    assertValidProfileName(normalized);
     ensureDir(PROFILES_DIR);
-    const configPath = getProfileConfigPath(name);
+    const configPath = getProfileConfigPath(normalized);
     writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
   }
 }
@@ -289,8 +300,10 @@ export function saveTokenCache(token: TokenCache, profileName?: string): void {
     ensureDir(CONFIG_DIR);
     writeFileSync(join(CONFIG_DIR, 'token.json'), JSON.stringify(token, null, 2), 'utf-8');
   } else {
+    const normalized = normalizeProfileName(name);
+    assertValidProfileName(normalized);
     ensureDir(TOKENS_DIR);
-    const tokenPath = getProfileTokenPath(name);
+    const tokenPath = getProfileTokenPath(normalized);
     writeFileSync(tokenPath, JSON.stringify(token, null, 2), 'utf-8');
   }
 }

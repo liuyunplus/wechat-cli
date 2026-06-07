@@ -172,12 +172,19 @@ describe('multi-account-auth', () => {
     expect(loadTokenCache('profile-b')?.accessToken).toBe('token-b');
   });
 
-  it('should reject invalid profile name', async () => {
+  it('should reject profile name containing space', async () => {
     const { resolveProfile } = await import('../../src/core/config.js');
     createProfile('default');
 
-    expect(() => resolveProfile({ profile: '技术博客' })).toThrow('Profile 名称不合法');
     expect(() => resolveProfile({ profile: 'Tech Blog' })).toThrow('Profile 名称不合法');
+  });
+
+  it('should reject path-like profile name', async () => {
+    const { resolveProfile } = await import('../../src/core/config.js');
+    createProfile('default');
+
+    expect(() => resolveProfile({ profile: '../etc/passwd' })).toThrow('Profile 名称不合法');
+    expect(() => resolveProfile({ profile: 'foo/bar' })).toThrow('Profile 名称不合法');
   });
 
   it('should resolve profile from options', async () => {
@@ -200,5 +207,163 @@ describe('multi-account-auth', () => {
     const { resolveProfile } = await import('../../src/core/config.js');
     const name = resolveProfile({ config: '/some/custom/path.json' });
     expect(name).toBe('__custom__');
+  });
+});
+
+describe('chinese-profile-names', () => {
+  it('should accept Chinese profile names', async () => {
+    const { resolveProfile } = await import('../../src/core/config.js');
+    createProfile('default');
+
+    const name = resolveProfile({ profile: '技术博客' });
+    expect(name).toBe('技术博客');
+  });
+
+  it('should accept mixed-case and underscored profile names', async () => {
+    const { resolveProfile } = await import('../../src/core/config.js');
+    createProfile('default');
+
+    expect(resolveProfile({ profile: 'TechBlog_2024' })).toBe('TechBlog_2024');
+    expect(resolveProfile({ profile: '科技-news' })).toBe('科技-news');
+    expect(resolveProfile({ profile: '生活号' })).toBe('生活号');
+  });
+
+  it('should persist Chinese profile to disk', async () => {
+    const { saveConfig, loadConfig, getProfileConfigPath } = await import('../../src/core/config.js');
+
+    const cfg = {
+      appId: 'wxid-chinese',
+      appSecret: 'chinese-secret',
+      accountType: 'service' as const,
+      apiBaseUrl: 'https://api.weixin.qq.com',
+    };
+    saveConfig(cfg, '技术博客');
+
+    const path = getProfileConfigPath('技术博客');
+    expect(existsSync(path)).toBe(true);
+
+    const loaded = loadConfig('技术博客');
+    expect(loaded.appId).toBe('wxid-chinese');
+    expect(loaded.appSecret).toBe('chinese-secret');
+  });
+
+  it('should list Chinese profiles', async () => {
+    const { listProfiles } = await import('../../src/core/config.js');
+    createProfile('default');
+    createProfile('技术博客');
+    createProfile('生活号');
+
+    const names = listProfiles().map(p => p.name);
+    expect(names).toContain('技术博客');
+    expect(names).toContain('生活号');
+  });
+
+  it('should track active profile for Chinese names', async () => {
+    const { saveActiveProfile, loadActiveProfile } = await import('../../src/core/config.js');
+    createProfile('技术博客');
+
+    saveActiveProfile('技术博客');
+    expect(loadActiveProfile()).toBe('技术博客');
+  });
+
+  it('should isolate tokens between ASCII and Chinese profiles', async () => {
+    const { saveTokenCache, loadTokenCache } = await import('../../src/core/config.js');
+
+    saveTokenCache({ accessToken: 'token-ascii', expiresAt: 1000 }, 'tech-blog');
+    saveTokenCache({ accessToken: 'token-cn', expiresAt: 2000 }, '技术博客');
+
+    expect(loadTokenCache('tech-blog')?.accessToken).toBe('token-ascii');
+    expect(loadTokenCache('技术博客')?.accessToken).toBe('token-cn');
+  });
+});
+
+describe('profile-name-validation', () => {
+  it('should reject empty profile name', async () => {
+    const { validateProfileName } = await import('../../src/types/config.js');
+    const r = validateProfileName('');
+    expect(r.valid).toBe(false);
+    expect(r.reason).toContain('不能为空');
+  });
+
+  it('should reject whitespace-only profile name', async () => {
+    const { validateProfileName } = await import('../../src/types/config.js');
+    const r = validateProfileName('   ');
+    expect(r.valid).toBe(false);
+  });
+
+  it('should reject reserved name __custom__', async () => {
+    const { validateProfileName } = await import('../../src/types/config.js');
+    const r = validateProfileName('__custom__');
+    expect(r.valid).toBe(false);
+    expect(r.reason).toContain('保留名');
+  });
+
+  it('should reject names longer than 64 characters', async () => {
+    const { validateProfileName } = await import('../../src/types/config.js');
+    const r = validateProfileName('a'.repeat(65));
+    expect(r.valid).toBe(false);
+    expect(r.reason).toContain('64');
+  });
+
+  it('should accept exactly 64-character name', async () => {
+    const { validateProfileName } = await import('../../src/types/config.js');
+    const r = validateProfileName('a'.repeat(64));
+    expect(r.valid).toBe(true);
+  });
+
+  it('should reject names with path separators or control characters', async () => {
+    const { validateProfileName } = await import('../../src/types/config.js');
+    expect(validateProfileName('foo/bar').valid).toBe(false);
+    expect(validateProfileName('foo\\bar').valid).toBe(false);
+    expect(validateProfileName('foo:bar').valid).toBe(false);
+    expect(validateProfileName('foo*bar').valid).toBe(false);
+  });
+
+  it('should accept default as a valid name', async () => {
+    const { validateProfileName } = await import('../../src/types/config.js');
+    expect(validateProfileName('default').valid).toBe(true);
+  });
+});
+
+describe('profile-name-normalization', () => {
+  it('should trim surrounding whitespace', async () => {
+    const { normalizeProfileName } = await import('../../src/types/config.js');
+    expect(normalizeProfileName('  技术博客  ')).toBe('技术博客');
+    expect(normalizeProfileName('  tech-blog\t')).toBe('tech-blog');
+  });
+
+  it('should apply NFC normalization', async () => {
+    const { normalizeProfileName } = await import('../../src/types/config.js');
+    const input = '技术博客';
+    const nfd = input.normalize('NFD').normalize('NFC');
+    expect(normalizeProfileName(nfd)).toBe(input);
+  });
+
+  it('should save trimmed+NFC name and read it back consistently', async () => {
+    const { saveActiveProfile, loadActiveProfile } = await import('../../src/core/config.js');
+    createProfile('技术博客');
+
+    saveActiveProfile('  技术博客  ');
+    expect(loadActiveProfile()).toBe('技术博客');
+  });
+
+  it('should persist active name to disk in NFC form', async () => {
+    const { saveActiveProfile } = await import('../../src/core/config.js');
+    const activePath = join(TEST_BASE, '.wechat-cli', 'active.json');
+    createProfile('技术博客');
+
+    saveActiveProfile('技术博客');
+    const content = readFileSync(activePath, 'utf-8');
+    expect(content).toContain('技术博客');
+    expect(content).not.toMatch(/\u200B|\uFEFF/);
+  });
+
+  it('should list profiles with NFC names', async () => {
+    const { listProfiles } = await import('../../src/core/config.js');
+    createProfile('技术博客');
+
+    const names = listProfiles().map(p => p.name);
+    expect(names).toContain('技术博客');
+    names.forEach(n => expect(n).toBe(n.normalize('NFC')));
   });
 });

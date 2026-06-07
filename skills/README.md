@@ -27,20 +27,29 @@
 wechat-cli 支持通过命名 profile 管理多个微信公众号。每个 profile 拥有独立的配置和 Token 缓存。
 
 ```bash
-# 创建命名 profile
+# 创建命名 profile（支持中英文、数字、下划线、连字符，1–64 字符）
 wechat-cli config init --profile tech-blog
 wechat-cli config init --profile news
+wechat-cli config init --profile "技术博客"
+wechat-cli config init --profile "科技-news"
+wechat-cli config init --profile "TechBlog_2024"
 
 # 切换默认 profile
 wechat-cli config use tech-blog
+wechat-cli config use "技术博客"
 
 # 列出所有 profile
 wechat-cli config list
 
 # 单次命令覆盖 profile（不改变默认值）
 wechat-cli draft list --profile news
+wechat-cli draft list --profile "技术博客"
 wechat-cli auth status --profile tech-blog --format json --quiet
 ```
+
+> **Shell 用法提示**：名称含中文、空格或 `-` 时，shell 中请用引号包裹（`--profile "技术博客"`），避免词分割。
+>
+> **字符规则**：`[A-Za-z0-9_\-\p{Script=Han}]`，长度 1–64 字符，`__custom__` 为保留名禁用。名称在保存时统一 trim + Unicode NFC 规范化，跨平台文件名稳定。
 
 首次升级时，旧版 `config.json` 会自动迁移为 `default` profile。
 
