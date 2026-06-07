@@ -180,7 +180,7 @@ function renderCodeBlock(code: string, lang: string, preStyle: string): string {
 
   // --- Assemble ---
   return (
-    `<section style="margin:20px 0;border-radius:8px;overflow:hidden;background:${bgColor};">` +
+    `<section style="margin:14px 0;border-radius:8px;overflow:hidden;background:${bgColor};">` +
     header +
     `<section style="padding:12px 16px;overflow-x:auto;text-align:left;">${linesHtml}</section>` +
     `</section>\n`
