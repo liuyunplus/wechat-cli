@@ -63,7 +63,7 @@ export function convertMarkdown(markdown: string, options: ConvertOptions = {}):
 
       listitem({ tokens }: Tokens.ListItem) {
         const text = this.parser.parse(tokens);
-        return `<li style="${styles.li}">${text}</li>\n`;
+        return `<li style="${styles.li}">${text}</li>`;
       },
 
       blockquote({ tokens }: Tokens.Blockquote) {
@@ -159,6 +159,12 @@ function renderCodeBlock(code: string, lang: string, preStyle: string): string {
   // --- Code body: each line as <span display:block> ---
   // Using <span> avoids WeChat injecting extra margin/padding like it does with <p>/<div>
   const font = 'Menlo,Consolas,Courier New,monospace';
+  // Force left alignment + safe wrap because WeChat strips overflow-x:auto and
+  // applies text-align:justify to body text, which would stretch tokens on wrapped lines.
+  const lineBaseStyle =
+    `display:block;` +
+    `font-family:${font};font-size:13px;line-height:26px;color:${textColor};` +
+    `text-align:left;white-space:pre-wrap;word-break:break-all;`;
 
   const lines = code.split('\n');
   if (lines.length > 0 && lines[lines.length - 1] === '') lines.pop();
@@ -169,14 +175,14 @@ function renderCodeBlock(code: string, lang: string, preStyle: string): string {
       .replace(/\t/g, '    ')
       .replace(/^ +/, m => '&nbsp;'.repeat(m.length));
     const content = indented || '<br>';
-    return `<span style="display:block;font-family:${font};font-size:13px;line-height:26px;color:${textColor};">${content}</span>`;
+    return `<span style="${lineBaseStyle}">${content}</span>`;
   }).join('');
 
   // --- Assemble ---
   return (
     `<section style="margin:20px 0;border-radius:8px;overflow:hidden;background:${bgColor};">` +
     header +
-    `<section style="padding:12px 16px;overflow-x:auto;">${linesHtml}</section>` +
+    `<section style="padding:12px 16px;overflow-x:auto;text-align:left;">${linesHtml}</section>` +
     `</section>\n`
   );
 }
